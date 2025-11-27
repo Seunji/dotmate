@@ -14,7 +14,7 @@ except ImportError:
 
 class CopperPriceParams(BaseModel):
     api_url: Optional[str] = None  # Optional API endpoint for fetching copper price
-    title: Optional[str] = "沪铜主连"  # Default title
+    title: Optional[str] = "沪铜主连cum"  # Default title
     link: Optional[str] = None
     border: Optional[int] = None
     dither_type: Optional[Literal["DIFFUSION", "ORDERED", "NONE"]] = "NONE"
