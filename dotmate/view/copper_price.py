@@ -46,7 +46,7 @@ class CopperPriceView(ImageView):
         return CopperPriceParams
 
     def _fetch_copper_price_from_akshare(self) -> dict:
-        """Fetch copper price data from AkShare (Sina Finance).
+        """Fetch copper price data from AkShare using multiple fallback methods.
 
         Returns:
             dict: Price data in standardized format
@@ -57,55 +57,121 @@ class CopperPriceView(ImageView):
 
             print("Fetching copper price from AkShare...")
 
-            # Fetch Shanghai copper main contract data from Sina Finance
-            # Symbol "CU" represents 沪铜主连 (Shanghai Copper Main Contract)
-            df = ak.futures_main_sina(symbol="CU")
+            # Try method 1: futures_main_sina (original method)
+            try:
+                print("Trying ak.futures_main_sina...")
+                df = ak.futures_main_sina(symbol="CU")
 
-            print(f"AkShare returned data: {type(df)}")
+                if df is not None and not df.empty:
+                    print(f"✓ futures_main_sina succeeded - DataFrame shape: {df.shape}")
+                    return self._parse_akshare_dataframe(df)
+            except Exception as e:
+                print(f"✗ futures_main_sina failed: {type(e).__name__}: {e}")
 
-            if df is None or df.empty:
-                raise ValueError("No data returned from AkShare")
+            # Try method 2: futures_zh_spot (spot prices)
+            try:
+                print("Trying ak.futures_zh_spot...")
+                df = ak.futures_zh_spot(symbol="沪铜主连")
 
-            print(f"DataFrame shape: {df.shape}")
-            print(f"DataFrame columns: {df.columns.tolist()}")
-            print(f"Latest row:\n{df.iloc[-1]}")
+                if df is not None and not df.empty:
+                    print(f"✓ futures_zh_spot succeeded - DataFrame shape: {df.shape}")
+                    # For spot data, extract the current price
+                    if '最新价' in df.columns and '涨跌' in df.columns and '涨跌幅' in df.columns:
+                        latest = df.iloc[0] if len(df) > 0 else None
+                        if latest is not None:
+                            price = float(latest['最新价'])
+                            change = float(latest['涨跌'])
+                            change_percent = float(latest['涨跌幅'].replace('%', ''))
 
-            # Get the latest data (most recent row)
-            latest = df.iloc[-1]
+                            result = {
+                                "price": price,
+                                "change": change,
+                                "change_percent": change_percent,
+                                "currency": "元"
+                            }
+                            print(f"Successfully fetched copper price: {result}")
+                            return result
+            except Exception as e:
+                print(f"✗ futures_zh_spot failed: {type(e).__name__}: {e}")
 
-            # Calculate change from previous close or open
-            current_price = float(latest['close'])
-            open_price = float(latest['open'])
+            # Try method 3: futures_display_main_sina (display data)
+            try:
+                print("Trying ak.futures_display_main_sina...")
+                df = ak.futures_display_main_sina(symbol="CU0")
 
-            # Try to get previous close, fallback to open if not available
-            if 'pre_close' in latest.index:
-                prev_close = float(latest['pre_close'])
-            else:
-                # If no pre_close, use the previous day's close
-                if len(df) > 1:
-                    prev_close = float(df.iloc[-2]['close'])
-                else:
-                    prev_close = open_price
+                if df is not None and not df.empty:
+                    print(f"✓ futures_display_main_sina succeeded - DataFrame shape: {df.shape}")
+                    # Extract current price info
+                    if '最新价' in df.columns:
+                        latest = df.iloc[0] if len(df) > 0 else None
+                        if latest is not None:
+                            price = float(latest.get('最新价', 0))
+                            prev_close = float(latest.get('昨收', price))
+                            change = price - prev_close
+                            change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
 
-            # Calculate change and percentage
-            change = current_price - prev_close
-            change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
+                            result = {
+                                "price": price,
+                                "change": change,
+                                "change_percent": change_percent,
+                                "currency": "元"
+                            }
+                            print(f"Successfully fetched copper price: {result}")
+                            return result
+            except Exception as e:
+                print(f"✗ futures_display_main_sina failed: {type(e).__name__}: {e}")
 
-            result = {
-                "price": current_price,
-                "change": change,
-                "change_percent": change_percent,
-                "currency": "元"
-            }
-
-            print(f"Successfully fetched copper price: {result}")
-            return result
+            # All methods failed
+            raise ValueError("All AkShare methods failed to fetch copper price data")
 
         except Exception as e:
             print(f"AkShare Error fetching copper price: {type(e).__name__}: {e}")
             import traceback
             traceback.print_exc()
             raise
+
+    def _parse_akshare_dataframe(self, df) -> dict:
+        """Parse AkShare DataFrame to extract price data.
+
+        Args:
+            df: Pandas DataFrame from AkShare
+
+        Returns:
+            dict: Standardized price data
+        """
+        print(f"DataFrame columns: {df.columns.tolist()}")
+        print(f"Latest row:\n{df.iloc[-1]}")
+
+        # Get the latest data (most recent row)
+        latest = df.iloc[-1]
+
+        # Calculate change from previous close or open
+        current_price = float(latest['close'])
+        open_price = float(latest['open'])
+
+        # Try to get previous close, fallback to open if not available
+        if 'pre_close' in latest.index:
+            prev_close = float(latest['pre_close'])
+        else:
+            # If no pre_close, use the previous day's close
+            if len(df) > 1:
+                prev_close = float(df.iloc[-2]['close'])
+            else:
+                prev_close = open_price
+
+        # Calculate change and percentage
+        change = current_price - prev_close
+        change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
+
+        result = {
+            "price": current_price,
+            "change": change,
+            "change_percent": change_percent,
+            "currency": "元"
+        }
+
+        print(f"Successfully parsed copper price: {result}")
+        return result
 
     def _fetch_copper_price(self, api_url: Optional[str]) -> dict:
         """Fetch copper price data from API endpoint or AkShare.
