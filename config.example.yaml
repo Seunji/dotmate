@@ -90,6 +90,14 @@ devices:
           dither_type: "NONE"
           link: "https://github.com/your-github-username"
 
+      # 每15分钟更新铜价行情
+      - cron: "*/15 * * * *"
+        type: copper_price
+        params:
+          api_url: "https://api.example.com/copper"
+          title: "沪铜主连"
+          dither_type: "NONE"
+
       # 工作时间每30分钟提醒休息
       - cron: "*/30 9-17 * * 1-5"
         type: text
@@ -124,6 +132,7 @@ devices:
 #     * title_image: 生成标题图像
 #     * umami_stats: Umami 网站统计数据
 #     * github_contributions: GitHub 贡献图表
+#     * copper_price: 铜价行情显示
 #
 #   - params: 消息参数（可选），根据消息类型不同而不同：
 #
@@ -175,4 +184,12 @@ devices:
 #       - link: 点击链接（可选）
 #       - border: 边框颜色（可选）
 #       - dither_type: 抖动类型（可选）
+#       - dither_kernel: 抖动内核（可选）
+#
+#     copper_price 类型参数：
+#       - api_url: 铜价 API 接口地址（可选，不提供则使用模拟数据）
+#       - title: 标题（可选，默认 "沪铜主连"）
+#       - link: 点击链接（可选）
+#       - border: 边框颜色（可选）
+#       - dither_type: 抖动类型（可选，DIFFUSION/ORDERED/NONE）
 #       - dither_kernel: 抖动内核（可选）

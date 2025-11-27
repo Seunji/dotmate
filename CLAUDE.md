@@ -35,6 +35,7 @@ python main.py push mydevice title_image --main-title "主标题" --sub-title "�
 python main.py push mydevice code_status --wakatime-url "https://waka.ameow.xyz" --wakatime-api-key "your-key" --wakatime-user-id "username"
 python main.py push mydevice umami_stats --umami-host "https://umami.ameow.xyz" --umami-website-id "website-id" --umami-api-key "api-key" --umami-time-range "7d"
 python main.py push mydevice github_contributions --github-username "username" --github-token "ghp_xxxxx" --dither-type "NONE"
+python main.py push mydevice copper_price --api-url "https://api.example.com/copper" --title "沪铜主连"
 
 # Additional image options:
 # --link "https://example.com"
@@ -48,6 +49,7 @@ python main.py demo <message_type> [options]
 # Demo examples:
 python main.py demo title_image --main-title "测试标题" --sub-title "副标题"
 python main.py demo work --clock-in "09:00" --clock-out "18:00"
+python main.py demo copper_price --title "沪铜主连"
 python main.py demo title_image --main-title "测试" --output "./my-demos"
 
 # The demo command supports all the same parameters as push (except device name)
@@ -72,7 +74,7 @@ python main.py demo title_image --main-title "测试" --output "./my-demos"
 **View System** (`dotmate/view/`):
 - Factory pattern for message type handlers
 - BaseView abstract class defines the interface for all message types
-- Currently supports: work (countdown timer), text (custom messages), code_status (Wakatime integration), image (binary images), title_image (generated text images), umami_stats (Umami analytics), github_contributions (GitHub contribution heatmap)
+- Currently supports: work (countdown timer), text (custom messages), code_status (Wakatime integration), image (binary images), title_image (generated text images), umami_stats (Umami analytics), github_contributions (GitHub contribution heatmap), copper_price (commodity price display)
 - Each view type has its own parameter model extending Pydantic BaseModel
 - Image views support dithering options and border colors for e-ink display optimization
 
@@ -146,6 +148,12 @@ devices:
         params:
           github_username: "your-username"
           github_token: "ghp_xxxxx"
+          dither_type: "NONE"
+      - cron: "*/15 * * * *"
+        type: "copper_price"
+        params:
+          api_url: "https://api.example.com/copper"
+          title: "沪铜主连"
           dither_type: "NONE"
 ```
 
