@@ -61,19 +61,30 @@ class CopperPriceView(ImageView):
             # Try method 1: futures_global_spot_em (EastMoney real-time data - PRIMARY)
             # This matches the data from quote.eastmoney.com
             try:
-                print("Trying ak.futures_global_spot_em...")
+                print("Trying ak.futures_global_spot_em (EastMoney real-time)...")
                 df = ak.futures_global_spot_em()
 
                 if df is not None and not df.empty:
-                    # Filter for copper - try different possible names
-                    copper_df = df[df['名称'].str.contains('沪铜|铜|CU', case=False, na=False)]
+                    # Filter for copper - look for 沪铜
+                    copper_df = df[df['名称'].str.contains('沪铜', case=False, na=False)]
 
                     if not copper_df.empty:
-                        print(f"✓ futures_global_spot_em succeeded - found copper data")
-                        # Take the first match (likely the main contract)
-                        latest = copper_df.iloc[0]
+                        print(f"Found {len(copper_df)} copper-related contracts:")
+                        for idx, row in copper_df.iterrows():
+                            print(f"  - {row['名称']} ({row['代码']}): {row['最新价']}")
 
-                        # Extract price data (Chinese column names)
+                        # Look specifically for "连续" or "cum" which indicates main contract
+                        main_df = copper_df[copper_df['名称'].str.contains('连续|cum', case=False, na=False)]
+
+                        if not main_df.empty:
+                            latest = main_df.iloc[0]
+                            print(f"✓ Using main contract: {latest['名称']} ({latest['代码']})")
+                        else:
+                            # Fallback to first copper contract
+                            latest = copper_df.iloc[0]
+                            print(f"✓ Using first copper contract: {latest['名称']} ({latest['代码']})")
+
+                        # Extract price data (Chinese column names from EastMoney)
                         current_price = float(latest['最新价'])
                         prev_close = float(latest['昨结'])
                         change = float(latest['涨跌额'])
@@ -85,7 +96,7 @@ class CopperPriceView(ImageView):
                             "change_percent": change_percent,
                             "currency": "元"
                         }
-                        print(f"Successfully fetched copper price: {result}")
+                        print(f"Successfully fetched copper price from EastMoney: {result}")
                         return result
                     else:
                         print("✗ No copper data found in futures_global_spot_em")
