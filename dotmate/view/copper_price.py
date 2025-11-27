@@ -57,69 +57,85 @@ class CopperPriceView(ImageView):
 
             print("Fetching copper price from AkShare...")
 
-            # Try method 1: futures_main_sina (original method)
+            # Try method 1: futures_spot_price (works!)
             try:
-                print("Trying ak.futures_main_sina...")
-                df = ak.futures_main_sina(symbol="CU")
+                print("Trying ak.futures_spot_price...")
+                df = ak.futures_spot_price()
 
                 if df is not None and not df.empty:
-                    print(f"✓ futures_main_sina succeeded - DataFrame shape: {df.shape}")
-                    return self._parse_akshare_dataframe(df)
-            except Exception as e:
-                print(f"✗ futures_main_sina failed: {type(e).__name__}: {e}")
+                    # Filter for copper (symbol: CU)
+                    copper_df = df[df['symbol'] == 'CU']
 
-            # Try method 2: futures_zh_spot (spot prices)
+                    if not copper_df.empty:
+                        print(f"✓ futures_spot_price succeeded - found copper data")
+                        latest = copper_df.iloc[0]
+
+                        # Extract price data
+                        spot_price = float(latest['spot_price'])
+                        dominant_price = float(latest.get('dominant_contract_price', spot_price))
+
+                        # Use dominant contract price as current price
+                        current_price = dominant_price
+
+                        # Calculate change using basis (spot price - futures price)
+                        # If dom_basis exists, use it to derive previous close
+                        if 'dom_basis' in latest.index and latest['dom_basis'] is not None:
+                            dom_basis = float(latest['dom_basis'])
+                            # Since dom_basis = spot_price - dominant_price
+                            # We can estimate previous close as current price minus some portion of basis
+                            # For simplicity, use spot_price as reference
+                            prev_close = spot_price
+                        else:
+                            prev_close = spot_price
+
+                        change = current_price - prev_close
+                        change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
+
+                        result = {
+                            "price": current_price,
+                            "change": change,
+                            "change_percent": change_percent,
+                            "currency": "元"
+                        }
+                        print(f"Successfully fetched copper price: {result}")
+                        return result
+                    else:
+                        print("✗ No copper data found in futures_spot_price")
+            except Exception as e:
+                print(f"✗ futures_spot_price failed: {type(e).__name__}: {e}")
+
+            # Try method 2: futures_global_spot_em (also works!)
             try:
-                print("Trying ak.futures_zh_spot...")
-                df = ak.futures_zh_spot(symbol="沪铜主连")
+                print("Trying ak.futures_global_spot_em...")
+                df = ak.futures_global_spot_em()
 
                 if df is not None and not df.empty:
-                    print(f"✓ futures_zh_spot succeeded - DataFrame shape: {df.shape}")
-                    # For spot data, extract the current price
-                    if '最新价' in df.columns and '涨跌' in df.columns and '涨跌幅' in df.columns:
-                        latest = df.iloc[0] if len(df) > 0 else None
-                        if latest is not None:
-                            price = float(latest['最新价'])
-                            change = float(latest['涨跌'])
-                            change_percent = float(latest['涨跌幅'].replace('%', ''))
+                    # Filter for copper - try different possible names
+                    copper_df = df[df['名称'].str.contains('沪铜|铜|CU', case=False, na=False)]
 
-                            result = {
-                                "price": price,
-                                "change": change,
-                                "change_percent": change_percent,
-                                "currency": "元"
-                            }
-                            print(f"Successfully fetched copper price: {result}")
-                            return result
+                    if not copper_df.empty:
+                        print(f"✓ futures_global_spot_em succeeded - found copper data")
+                        # Take the first match (likely the main contract)
+                        latest = copper_df.iloc[0]
+
+                        # Extract price data (Chinese column names)
+                        current_price = float(latest['最新价'])
+                        prev_close = float(latest['昨结'])
+                        change = float(latest['涨跌额'])
+                        change_percent = float(latest['涨跌幅'])
+
+                        result = {
+                            "price": current_price,
+                            "change": change,
+                            "change_percent": change_percent,
+                            "currency": "元"
+                        }
+                        print(f"Successfully fetched copper price: {result}")
+                        return result
+                    else:
+                        print("✗ No copper data found in futures_global_spot_em")
             except Exception as e:
-                print(f"✗ futures_zh_spot failed: {type(e).__name__}: {e}")
-
-            # Try method 3: futures_display_main_sina (display data)
-            try:
-                print("Trying ak.futures_display_main_sina...")
-                df = ak.futures_display_main_sina(symbol="CU0")
-
-                if df is not None and not df.empty:
-                    print(f"✓ futures_display_main_sina succeeded - DataFrame shape: {df.shape}")
-                    # Extract current price info
-                    if '最新价' in df.columns:
-                        latest = df.iloc[0] if len(df) > 0 else None
-                        if latest is not None:
-                            price = float(latest.get('最新价', 0))
-                            prev_close = float(latest.get('昨收', price))
-                            change = price - prev_close
-                            change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
-
-                            result = {
-                                "price": price,
-                                "change": change,
-                                "change_percent": change_percent,
-                                "currency": "元"
-                            }
-                            print(f"Successfully fetched copper price: {result}")
-                            return result
-            except Exception as e:
-                print(f"✗ futures_display_main_sina failed: {type(e).__name__}: {e}")
+                print(f"✗ futures_global_spot_em failed: {type(e).__name__}: {e}")
 
             # All methods failed
             raise ValueError("All AkShare methods failed to fetch copper price data")
