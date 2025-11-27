@@ -58,54 +58,8 @@ class CopperPriceView(ImageView):
 
             print("Fetching copper price from AkShare...")
 
-            # Try method 1: futures_spot_price (works!)
-            try:
-                print("Trying ak.futures_spot_price...")
-                df = ak.futures_spot_price()
-
-                if df is not None and not df.empty:
-                    # Filter for copper (symbol: CU)
-                    copper_df = df[df['symbol'] == 'CU']
-
-                    if not copper_df.empty:
-                        print(f"✓ futures_spot_price succeeded - found copper data")
-                        latest = copper_df.iloc[0]
-
-                        # Extract price data
-                        spot_price = float(latest['spot_price'])
-                        dominant_price = float(latest.get('dominant_contract_price', spot_price))
-
-                        # Use dominant contract price as current price
-                        current_price = dominant_price
-
-                        # Calculate change using basis (spot price - futures price)
-                        # If dom_basis exists, use it to derive previous close
-                        if 'dom_basis' in latest.index and latest['dom_basis'] is not None:
-                            dom_basis = float(latest['dom_basis'])
-                            # Since dom_basis = spot_price - dominant_price
-                            # We can estimate previous close as current price minus some portion of basis
-                            # For simplicity, use spot_price as reference
-                            prev_close = spot_price
-                        else:
-                            prev_close = spot_price
-
-                        change = current_price - prev_close
-                        change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
-
-                        result = {
-                            "price": current_price,
-                            "change": change,
-                            "change_percent": change_percent,
-                            "currency": "元"
-                        }
-                        print(f"Successfully fetched copper price: {result}")
-                        return result
-                    else:
-                        print("✗ No copper data found in futures_spot_price")
-            except Exception as e:
-                print(f"✗ futures_spot_price failed: {type(e).__name__}: {e}")
-
-            # Try method 2: futures_global_spot_em (also works!)
+            # Try method 1: futures_global_spot_em (EastMoney real-time data - PRIMARY)
+            # This matches the data from quote.eastmoney.com
             try:
                 print("Trying ak.futures_global_spot_em...")
                 df = ak.futures_global_spot_em()
