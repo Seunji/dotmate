@@ -35,9 +35,9 @@ python main.py push mydevice title_image --main-title "主标题" --sub-title "�
 python main.py push mydevice code_status --wakatime-url "https://waka.ameow.xyz" --wakatime-api-key "your-key" --wakatime-user-id "username"
 python main.py push mydevice umami_stats --umami-host "https://umami.ameow.xyz" --umami-website-id "website-id" --umami-api-key "api-key" --umami-time-range "7d"
 python main.py push mydevice github_contributions --github-username "username" --github-token "ghp_xxxxx" --dither-type "NONE"
-python main.py push mydevice copper_price --title "沪铜主连"  # Uses AkShare by default
-python main.py push mydevice copper_price --api-url "akshare" --title "沪铜主连"  # Explicitly use AkShare
-python main.py push mydevice copper_price --api-url "https://api.example.com/copper" --title "沪铜主连"  # Use custom API
+python main.py push mydevice copper_price --title "沪铜主连cum"  # Uses AkShare by default
+python main.py push mydevice copper_price --api-url "akshare" --title "沪铜主连cum"  # Explicitly use AkShare
+python main.py push mydevice copper_price --api-url "https://api.example.com/copper" --title "沪铜主连cum"  # Use custom API
 
 # Additional image options:
 # --link "https://example.com"
@@ -51,8 +51,8 @@ python main.py demo <message_type> [options]
 # Demo examples:
 python main.py demo title_image --main-title "测试标题" --sub-title "副标题"
 python main.py demo work --clock-in "09:00" --clock-out "18:00"
-python main.py demo copper_price --title "沪铜主连"  # Uses AkShare for real-time data
-python main.py demo copper_price --api-url "akshare" --title "沪铜主连"  # Explicitly use AkShare
+python main.py demo copper_price --title "沪铜主连cum"  # Uses AkShare for real-time data
+python main.py demo copper_price --api-url "akshare" --title "沪铜主连cum"  # Explicitly use AkShare
 python main.py demo title_image --main-title "测试" --output "./my-demos"
 
 # The demo command supports all the same parameters as push (except device name)
@@ -165,7 +165,7 @@ devices:
           # api_url is optional - omit to use AkShare (free, real-time SHFE data)
           # api_url: "akshare"  # Explicitly use AkShare
           # api_url: "https://api.example.com/copper"  # Or use custom API
-          title: "沪铜主连"
+          title: "沪铜主连cum"
           dither_type: "NONE"
 ```
 
