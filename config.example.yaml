@@ -97,7 +97,7 @@ devices:
           # api_url 可选 - 不填写默认使用 AkShare 获取上期所实时行情
           # api_url: "akshare"  # 显式指定使用 AkShare
           # api_url: "https://api.example.com/copper"  # 或使用自定义 API
-          title: "沪铜主连"
+          title: "沪铜主连cum"
           dither_type: "NONE"
 
       # 工作时间每30分钟提醒休息
@@ -193,7 +193,7 @@ devices:
 #           * 不填写：默认使用 AkShare 获取上期所沪铜主连实时数据（免费）
 #           * "akshare": 显式指定使用 AkShare
 #           * 自定义 URL: 使用自定义 API 接口
-#       - title: 标题（可选，默认 "沪铜主连"）
+#       - title: 标题（可选，默认 "沪铜主连cum"）
 #       - link: 点击链接（可选）
 #       - border: 边框颜色（可选）
 #       - dither_type: 抖动类型（可选，DIFFUSION/ORDERED/NONE）
