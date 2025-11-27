@@ -55,11 +55,20 @@ class CopperPriceView(ImageView):
             if not AKSHARE_AVAILABLE:
                 raise ImportError("AkShare is not installed")
 
+            print("Fetching copper price from AkShare...")
+
             # Fetch Shanghai copper main contract data from Sina Finance
-            df = ak.futures_main_sina(symbol="CU")  # CU = 沪铜主连
+            # Symbol "CU" represents 沪铜主连 (Shanghai Copper Main Contract)
+            df = ak.futures_main_sina(symbol="CU")
+
+            print(f"AkShare returned data: {type(df)}")
 
             if df is None or df.empty:
                 raise ValueError("No data returned from AkShare")
+
+            print(f"DataFrame shape: {df.shape}")
+            print(f"DataFrame columns: {df.columns.tolist()}")
+            print(f"Latest row:\n{df.iloc[-1]}")
 
             # Get the latest data (most recent row)
             latest = df.iloc[-1]
@@ -67,21 +76,35 @@ class CopperPriceView(ImageView):
             # Calculate change from previous close or open
             current_price = float(latest['close'])
             open_price = float(latest['open'])
-            prev_close = float(latest.get('pre_close', open_price))
+
+            # Try to get previous close, fallback to open if not available
+            if 'pre_close' in latest.index:
+                prev_close = float(latest['pre_close'])
+            else:
+                # If no pre_close, use the previous day's close
+                if len(df) > 1:
+                    prev_close = float(df.iloc[-2]['close'])
+                else:
+                    prev_close = open_price
 
             # Calculate change and percentage
             change = current_price - prev_close
             change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
 
-            return {
+            result = {
                 "price": current_price,
                 "change": change,
                 "change_percent": change_percent,
                 "currency": "元"
             }
 
+            print(f"Successfully fetched copper price: {result}")
+            return result
+
         except Exception as e:
-            print(f"AkShare Error fetching copper price: {e}")
+            print(f"AkShare Error fetching copper price: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             raise
 
     def _fetch_copper_price(self, api_url: Optional[str]) -> dict:
