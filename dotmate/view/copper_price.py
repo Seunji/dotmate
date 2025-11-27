@@ -39,7 +39,8 @@ class CopperPriceView(ImageView):
 
     def __init__(self, client, device_id: str):
         super().__init__(client, device_id)
-        self.custom_font_name = "Hack-Bold"
+        self.custom_font_name = "SourceHanSansSC-VF"
+        self.font_weight = 600  # SemiBold weight for better readability
 
     @classmethod
     def get_params_class(cls) -> Type[BaseModel]:
