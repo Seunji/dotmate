@@ -35,7 +35,9 @@ python main.py push mydevice title_image --main-title "主标题" --sub-title "�
 python main.py push mydevice code_status --wakatime-url "https://waka.ameow.xyz" --wakatime-api-key "your-key" --wakatime-user-id "username"
 python main.py push mydevice umami_stats --umami-host "https://umami.ameow.xyz" --umami-website-id "website-id" --umami-api-key "api-key" --umami-time-range "7d"
 python main.py push mydevice github_contributions --github-username "username" --github-token "ghp_xxxxx" --dither-type "NONE"
-python main.py push mydevice copper_price --api-url "https://api.example.com/copper" --title "沪铜主连"
+python main.py push mydevice copper_price --title "沪铜主连"  # Uses AkShare by default
+python main.py push mydevice copper_price --api-url "akshare" --title "沪铜主连"  # Explicitly use AkShare
+python main.py push mydevice copper_price --api-url "https://api.example.com/copper" --title "沪铜主连"  # Use custom API
 
 # Additional image options:
 # --link "https://example.com"
@@ -49,7 +51,8 @@ python main.py demo <message_type> [options]
 # Demo examples:
 python main.py demo title_image --main-title "测试标题" --sub-title "副标题"
 python main.py demo work --clock-in "09:00" --clock-out "18:00"
-python main.py demo copper_price --title "沪铜主连"
+python main.py demo copper_price --title "沪铜主连"  # Uses AkShare for real-time data
+python main.py demo copper_price --api-url "akshare" --title "沪铜主连"  # Explicitly use AkShare
 python main.py demo title_image --main-title "测试" --output "./my-demos"
 
 # The demo command supports all the same parameters as push (except device name)
@@ -92,6 +95,13 @@ python main.py demo title_image --main-title "测试" --output "./my-demos"
 - Custom font selection per View with automatic fallback to default fonts
 - Built-in fonts: Hack-Bold (for code), SourceHanSansSC-VF (for Chinese text)
 - Variable font support with customizable weight settings in View classes
+
+**Data Sources**:
+- **copper_price View**: Integrated with AkShare library for real-time Shanghai copper futures data
+  - By default (no `api_url` or `api_url="akshare"`): Fetches live data from Sina Finance via AkShare
+  - Custom API: Can specify custom API endpoint for alternative data sources
+  - Automatic fallback: If AkShare or custom API fails, falls back to mock data
+  - AkShare provides free access to Shanghai Futures Exchange copper main contract (沪铜主连)
 
 ### Message Type Extension
 
@@ -152,7 +162,9 @@ devices:
       - cron: "*/15 * * * *"
         type: "copper_price"
         params:
-          api_url: "https://api.example.com/copper"
+          # api_url is optional - omit to use AkShare (free, real-time SHFE data)
+          # api_url: "akshare"  # Explicitly use AkShare
+          # api_url: "https://api.example.com/copper"  # Or use custom API
           title: "沪铜主连"
           dither_type: "NONE"
 ```
@@ -163,6 +175,7 @@ devices:
 - PyYAML: Configuration file parsing
 - Requests: HTTP API communication
 - Pillow (PIL): Image processing and generation
+- AkShare: Financial data interface for Shanghai Futures Exchange (free, real-time copper prices)
 - Custom fonts: Hack (programming font), SourceHanSansSC (Chinese font)
 
 ## Font System Usage

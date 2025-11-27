@@ -5,6 +5,12 @@ from pydantic import BaseModel
 from dotmate.view.image import ImageView, ImageParams
 from PIL import Image, ImageDraw
 
+try:
+    import akshare as ak
+    AKSHARE_AVAILABLE = True
+except ImportError:
+    AKSHARE_AVAILABLE = False
+
 
 class CopperPriceParams(BaseModel):
     api_url: Optional[str] = None  # Optional API endpoint for fetching copper price
@@ -39,8 +45,52 @@ class CopperPriceView(ImageView):
     def get_params_class(cls) -> Type[BaseModel]:
         return CopperPriceParams
 
+    def _fetch_copper_price_from_akshare(self) -> dict:
+        """Fetch copper price data from AkShare (Sina Finance).
+
+        Returns:
+            dict: Price data in standardized format
+        """
+        try:
+            if not AKSHARE_AVAILABLE:
+                raise ImportError("AkShare is not installed")
+
+            # Fetch Shanghai copper main contract data from Sina Finance
+            df = ak.futures_main_sina(symbol="CU")  # CU = 沪铜主连
+
+            if df is None or df.empty:
+                raise ValueError("No data returned from AkShare")
+
+            # Get the latest data (most recent row)
+            latest = df.iloc[-1]
+
+            # Calculate change from previous close or open
+            current_price = float(latest['close'])
+            open_price = float(latest['open'])
+            prev_close = float(latest.get('pre_close', open_price))
+
+            # Calculate change and percentage
+            change = current_price - prev_close
+            change_percent = (change / prev_close * 100) if prev_close != 0 else 0.0
+
+            return {
+                "price": current_price,
+                "change": change,
+                "change_percent": change_percent,
+                "currency": "元"
+            }
+
+        except Exception as e:
+            print(f"AkShare Error fetching copper price: {e}")
+            raise
+
     def _fetch_copper_price(self, api_url: Optional[str]) -> dict:
-        """Fetch copper price data from API endpoint.
+        """Fetch copper price data from API endpoint or AkShare.
+
+        Priority:
+        1. If api_url is provided and is not "akshare", fetch from custom API
+        2. If api_url is None or "akshare", fetch from AkShare
+        3. If all fail, return mock data
 
         Expected API response format:
         {
@@ -50,28 +100,38 @@ class CopperPriceView(ImageView):
             "currency": "元"
         }
         """
-        if not api_url:
-            # Return mock data for testing/demo purposes
-            return {
-                "price": 87070.00,
-                "change": 380.00,
-                "change_percent": 0.44,
-                "currency": "元"
-            }
+        # Try AkShare first if no api_url or api_url is "akshare"
+        if not api_url or api_url.lower() == "akshare":
+            try:
+                return self._fetch_copper_price_from_akshare()
+            except Exception as e:
+                print(f"Failed to fetch from AkShare: {e}")
+                # Fall through to mock data
+                return {
+                    "price": 87070.00,
+                    "change": 380.00,
+                    "change_percent": 0.44,
+                    "currency": "元"
+                }
 
+        # Try custom API endpoint
         try:
             response = requests.get(api_url, timeout=10)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            print(f"API Error fetching copper price: {e}")
-            # Return default data on error
-            return {
-                "price": 0.00,
-                "change": 0.00,
-                "change_percent": 0.00,
-                "currency": "元"
-            }
+            print(f"API Error fetching copper price from {api_url}: {e}")
+            # Try AkShare as fallback
+            try:
+                return self._fetch_copper_price_from_akshare()
+            except Exception:
+                # Final fallback to mock data
+                return {
+                    "price": 0.00,
+                    "change": 0.00,
+                    "change_percent": 0.00,
+                    "currency": "元"
+                }
 
     def _format_price(self, price: float) -> str:
         """Format price with proper decimal places."""

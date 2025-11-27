@@ -90,11 +90,13 @@ devices:
           dither_type: "NONE"
           link: "https://github.com/your-github-username"
 
-      # 每15分钟更新铜价行情
+      # 每15分钟更新铜价行情（使用 AkShare 获取实时数据）
       - cron: "*/15 * * * *"
         type: copper_price
         params:
-          api_url: "https://api.example.com/copper"
+          # api_url 可选 - 不填写默认使用 AkShare 获取上期所实时行情
+          # api_url: "akshare"  # 显式指定使用 AkShare
+          # api_url: "https://api.example.com/copper"  # 或使用自定义 API
           title: "沪铜主连"
           dither_type: "NONE"
 
@@ -187,7 +189,10 @@ devices:
 #       - dither_kernel: 抖动内核（可选）
 #
 #     copper_price 类型参数：
-#       - api_url: 铜价 API 接口地址（可选，不提供则使用模拟数据）
+#       - api_url: 铜价 API 接口地址（可选）
+#           * 不填写：默认使用 AkShare 获取上期所沪铜主连实时数据（免费）
+#           * "akshare": 显式指定使用 AkShare
+#           * 自定义 URL: 使用自定义 API 接口
 #       - title: 标题（可选，默认 "沪铜主连"）
 #       - link: 点击链接（可选）
 #       - border: 边框颜色（可选）
